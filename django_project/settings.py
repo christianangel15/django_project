@@ -140,4 +140,4 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config.get('EMAIL_USER')
-EMAIL_HOST_PASSWORD = config.environ.get('EMAIL_PASS')
+EMAIL_HOST_PASSWORD = config.get('EMAIL_PASS')

@@ -1,4 +1,5 @@
 {% extends "blog/base.html" %}
+{% load crispy_forms_tags %}
 {% block content %}
 	
 	<article class="media content-section">
@@ -18,5 +19,49 @@
 		    <p class="article-content">{{ object.content }}</p>
 		  </div>
 		</article>
+
+	<!-- Comments Section -->
+	<div class="content-section">
+		<h4>Comments ({{ comments.count }})</h4>
+		
+		<!-- Add Comment Form -->
+		{% if user.is_authenticated %}
+			<div class="mb-4">
+				<form method="POST" action="{% url 'add-comment' object.pk %}">
+					{% csrf_token %}
+					{{ comment_form|crispy }}
+					<button class="btn btn-primary" type="submit">Add Comment</button>
+				</form>
+			</div>
+		{% else %}
+			<p><a href="{% url 'login' %}">Login</a> to add a comment.</p>
+		{% endif %}
+
+		<!-- Display Comments -->
+		{% for comment in comments %}
+			<article class="media mb-3">
+				<img class="rounded-circle comment-img" src="{{ comment.author.profile.image.url }}" style="width: 40px; height: 40px;">
+				<div class="media-body ml-3">
+					<div class="d-flex justify-content-between">
+						<div>
+							<h6 class="mt-0">
+								<a href="{% url 'user-posts' comment.author.username %}">{{ comment.author.username }}</a>
+								<small class="text-muted ml-2">{{ comment.date_posted|date:'F d, Y \a\t g:i A' }}</small>
+							</h6>
+						</div>
+						{% if comment.author == user %}
+							<div>
+								<a href="{% url 'delete-comment' comment.pk %}" class="btn btn-outline-danger btn-sm" 
+								   onclick="return confirm('Are you sure you want to delete this comment?')">Delete</a>
+							</div>
+						{% endif %}
+					</div>
+					<p class="mb-1">{{ comment.content|linebreaks }}</p>
+				</div>
+			</article>
+		{% empty %}
+			<p class="text-muted">No comments yet. Be the first to comment!</p>
+		{% endfor %}
+	</div>
 	
 {% endblock content %}
