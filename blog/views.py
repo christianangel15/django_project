@@ -1,12 +1,15 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.views.generic import (ListView, 
 	                               DetailView, 
 	                                 CreateView,
 	                                  UpdateView,
 	                                   DeleteView)
-from .models import post
+from .models import post, Comment
+from .forms import CommentForm
 
 def home(request):
 	context = {
@@ -34,6 +37,12 @@ class UserPostListView(ListView):
 
 class PostDetailView(DetailView):
 	model = post
+	
+	def get_context_data(self, **kwargs):
+		context = super().get_context_data(**kwargs)
+		context['comments'] = self.object.comments.all()
+		context['comment_form'] = CommentForm()
+		return context
 	
 class PostCreateView(LoginRequiredMixin, CreateView):
 	model = post
@@ -65,8 +74,30 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 			return True
 		return False
 
+@login_required
+def add_comment(request, pk):
+	post_obj = get_object_or_404(post, pk=pk)
+	if request.method == 'POST':
+		form = CommentForm(request.POST)
+		if form.is_valid():
+			comment = form.save(commit=False)
+			comment.post = post_obj
+			comment.author = request.user
+			comment.save()
+			messages.success(request, 'Your comment has been added!')
+			return redirect('post-detail', pk=post_obj.pk)
+	return redirect('post-detail', pk=post_obj.pk)
+
+@login_required
+def delete_comment(request, pk):
+	comment = get_object_or_404(Comment, pk=pk)
+	post_pk = comment.post.pk
+	if request.user == comment.author:
+		comment.delete()
+		messages.success(request, 'Your comment has been deleted!')
+	else:
+		messages.error(request, 'You can only delete your own comments!')
+	return redirect('post-detail', pk=post_pk)
 		
 def about(request):
 	return render(request, 'blog/about.html',{'title':'About'})
-
- 
